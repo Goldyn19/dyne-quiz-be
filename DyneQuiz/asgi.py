@@ -1,25 +1,25 @@
-"""
-ASGI config for DyneQuiz project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
-"""
-
 import os
-import django
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from quiz.routing import  websocket_urlpatterns
 
+# Set the default settings module FIRST
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'DyneQuiz.settings')
 
+# Get the ASGI application for HTTP
+django_asgi_app = get_asgi_application()
+
+
+import django
 django.setup()
 
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+
+
+from quiz.routing import websocket_urlpatterns
+
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
+    "http": django_asgi_app,
     "websocket": AuthMiddlewareStack(
         URLRouter(
             websocket_urlpatterns
