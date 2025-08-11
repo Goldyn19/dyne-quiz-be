@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import ValidationError
-from django.utils.text import slugify
-from .models import User, Organization
-# from django.contrib.auth import get_user_model
+from .models import User
 from social_django.utils import load_strategy
 from social_core.backends.google import GoogleOAuth2
 from social_core.exceptions import AuthException
@@ -14,7 +12,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password']
+        fields = ['email', 'password', 'first_name', 'last_name', 'username']
 
     def validate(self, attrs):
         email = attrs.get("email")
@@ -32,15 +30,8 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-        first_name = validated_data.get('first_name', '')
-        org_name = f"{first_name} Organisation"
-        org = Organization.objects.create(
-            name=org_name,
-            slug=slugify(org_name)
-        )
         user = super().create(validated_data)
         user.set_password(password)
-        user.organization = org
         user.save()
 
         return user
@@ -74,6 +65,28 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    org_id = serializers.SerializerMethodField()
+    org_name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'image']
+        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'image', 'org_id', 'org_name', 'role']
+
+    def get_org_id(self, obj):
+        membership = getattr(obj, 'organizationmembership', None)
+        if membership and membership.organization:
+            return membership.organization.id
+        return None
+
+    def get_org_name(self, obj):
+        membership = getattr(obj, 'organizationmembership', None)
+        if membership and membership.organization:
+            return membership.organization.name
+        return None
+
+    def get_role(self, obj):
+        membership = getattr(obj, 'organizationmembership', None)
+        if membership:
+            return membership.role
+        return None

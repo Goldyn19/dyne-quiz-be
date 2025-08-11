@@ -26,20 +26,8 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email=email, password=password, **extra_fields)
 
 
-class Organization(models.Model):
-    name = models.CharField(max_length=45, unique=True)
-    slug = models.SlugField(unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
 class User(AbstractUser):
     username = models.CharField(max_length=45, unique=True)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
-    role = models.CharField(
-        max_length=10,
-        choices=[('admin', 'Admin'), ('member', 'Member')],
-        default='member'
-    )
     email = models.EmailField(max_length=80, unique=True)
     first_name = models.CharField(max_length=45, null=True, blank=True)
     last_name = models.CharField(max_length=45, null=True, blank=True)

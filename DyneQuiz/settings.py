@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +37,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    # daphne server
+    'daphne',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,6 +47,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'members',
+    'quiz',
+    'organization',
+    'activity_log',
+    'question',
 
     # Third party app
     'drf_yasg',  # swagger documentation
@@ -50,6 +61,10 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'social_django',
     'drf_social_oauth2',
+
+    # web socket app
+    'channels',
+
 ]
 
 
@@ -83,6 +98,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'core.middleware.GuestPlayerMiddleware',
 ]
 
 # set oauth authentication
@@ -101,6 +117,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001"
 ]
+
+Access_Control_Allow_Credentials = True
 
 ROOT_URLCONF = 'DyneQuiz.urls'
 
@@ -121,7 +139,23 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'DyneQuiz.wsgi.application'
+ASGI_APPLICATION = 'DyneQuiz.asgi.application'
 
+# layer for Websocket
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

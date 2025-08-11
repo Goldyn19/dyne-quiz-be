@@ -5,14 +5,35 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 from .tokens import create_jwt_pair_for_user
 from .serializers import SignUpSerializer, UserSerializer, UserUpdateSerializer, GoogleLoginSerializer
-from .models import User, Organization
+from .models import User
 from rest_framework import generics, permissions
 from drf_yasg .utils import swagger_auto_schema
-from django.utils.text import slugify
+from drf_yasg import openapi
 
 
 class LoginView(APIView):
-    @swagger_auto_schema(operation_summary='Login User', operation_description='To login users')
+    @swagger_auto_schema(
+        operation_summary='User Login',
+        operation_description="""
+    Authenticate a user using email and password.  
+    Returns JWT access and refresh tokens along with user details.
+
+    ❗ Accounts created via Google cannot log in using email/password.
+    """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["email", "password"],
+            properties={
+                "email": openapi.Schema(type=openapi.TYPE_STRING, format="email", example="user@example.com"),
+                "password": openapi.Schema(type=openapi.TYPE_STRING, format="password", example="yourpassword")
+            }
+        ),
+        responses={
+            200: openapi.Response(description="Login successful"),
+            400: "Google account login attempt via password",
+            401: "Invalid credentials"
+        }
+    )
     def post(self, request: Request):
         email = request.data.get('email')
         password = request.data.get('password')
@@ -48,7 +69,18 @@ class LoginView(APIView):
 class SignUpView(generics.GenericAPIView):
     serializer_class = SignUpSerializer
 
-    @swagger_auto_schema(operation_summary='create User', operation_description='signup with email address')
+    @swagger_auto_schema(
+        operation_summary="User Registration",
+        operation_description="""
+    Create a new user with email, password, and optional profile info.
+
+    Returns created user details.
+    """,
+        responses={
+            201: openapi.Response(description="User created successfully"),
+            400: "Validation errors (e.g. duplicate email, weak password)"
+        }
+    )
     def post(self, request: Request):
         try:
             data = request.data
@@ -79,18 +111,29 @@ class GoogleLoginView(APIView):
     Accepts a Google access token, verifies it, and returns JWT tokens.
     """
 
-    @swagger_auto_schema(operation_summary='uses google Oauth to login', operation_description='Allows Users to sign in to the apllication with google Auth')
+    @swagger_auto_schema(
+        operation_summary="Google OAuth Login",
+        operation_description="""
+    Log in using a valid Google OAuth access token.  
+    Returns JWT tokens and user info if the token is valid.
+    """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["access_token"],
+            properties={
+                "access_token": openapi.Schema(type=openapi.TYPE_STRING, example="ya29.A0ARrdaM...")
+            }
+        ),
+        responses={
+            200: openapi.Response(description="Google login successful"),
+            400: "Invalid or expired Google token"
+        }
+    )
     def post(self, request):
         serializer = GoogleLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
-
-            # Check if user was just created (i.e., no organization exists)
-            if not user.organization:
-                org_name = f"{user.first_name} Organisation"
-                organization = Organization.objects.create(name=org_name, slug=slugify(org_name))
-                user.organization = organization
-                user.save()
+            user.save()
 
             tokens = create_jwt_pair_for_user(user)
             user_data = UserSerializer(user).data
@@ -113,7 +156,18 @@ class UserUpdateView(generics.UpdateAPIView):
     def get_object(self):
         return self.request.user
 
-    @swagger_auto_schema(operation_description='Update user details', operation_summary='Update user')
+    @swagger_auto_schema(
+        operation_summary="Update User Profile",
+        operation_description="""
+    Update authenticated user's profile fields like first name, last name, or profile image.
+
+    The email and password cannot be updated here.
+    """,
+        responses={
+            200: openapi.Response(description="Profile updated successfully"),
+            400: "Invalid fields or data"
+        }
+    )
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
 # Create your views here.
