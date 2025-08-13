@@ -202,8 +202,8 @@ class TokenAuthSubprotocol:
 
         # 3. Check cookies
         cookies = scope.get('cookies', {})
-        if 'ws_token' in cookies:
-            return cookies['ws_token']
+        if 'guest_token' in cookies:
+            return cookies['guest_token']
 
         return None
 
