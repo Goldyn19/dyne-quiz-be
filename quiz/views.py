@@ -483,7 +483,7 @@ class CreateGuestPlayerView(generics.CreateAPIView):
                 player.guest_id,
                 max_age=24 * 60 * 60,  # 24 hours in seconds
                 httponly=True,
-                secure=False,  # Set to True in production with HTTPS
+                secure=True,  # Set to True in production with HTTPS
                 samesite='Lax'
             )
             
